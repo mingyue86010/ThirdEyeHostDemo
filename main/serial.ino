@@ -26,6 +26,13 @@ void processSerialUSBCommand( void )
         debugPrint( "Send to serial --> " + String(thirdEyeCommandStr[CONNECT]) );
         /*-- End --*/
       }
+      else if ( inputString.equals( "send\n" ))
+      {
+        /*-- Code added for ThirdEye --*/
+        serial1_send( thirdEyeCommandStr[SEND] );
+        debugPrint( "Send to serial --> " + String(thirdEyeCommandStr[SEND]) );
+        /*-- End --*/
+      }
     }
   }
 }

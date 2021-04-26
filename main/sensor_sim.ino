@@ -11,7 +11,7 @@ void reportTemperature( int value )
 {
     String toSendStr = ""; // Create a new string
     
-    toSendStr = "Temperature=" + String(value);
+    toSendStr = "AT+SEND Temperature=" + String(value) + " \n";
     
     // Send the assembled string out over the hardware Serial1 port (TX pin 1).
     serial1_send( toSendStr );
