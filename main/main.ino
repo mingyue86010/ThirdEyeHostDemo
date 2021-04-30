@@ -1,11 +1,6 @@
-#include "serial.h"
-#include "sensor_sim.h"
+#include <Arduino.h>
+
 #include "thirdeye.h"
-
-static int temperatureLastReadVal = 0;
-int global_demo_run = false;
-
-void(* softReset) (void) = setup;//declare reset function at address 0
 
 void setup()
 { 
@@ -13,86 +8,57 @@ void setup()
   SerialUSB.begin(115200); // Initialize Serial Monitor USB
   Serial1.begin(115200); // Initialize hardware serial port, pins 0/1
   while (!SerialUSB) ; // Wait for Serial monitor to open
-  debugPrint( "Host rebooted.");
-
-  /* For Demo Debug */
-  break_point();
+  SerialUSB.println( "Host rebooted.");
   
-  /* --- Code added for ThirdEye --- */
   /* Config Wifi */
-  send_to_thirdeye( "AT+CONF SSID=NETGEAR90 \n" );
-  send_to_thirdeye( "AT+CONF PASSPHRASE=boldvalley718 \n" );  
-  /* Config Topic */
-  send_to_thirdeye( "AT+CONF TOPIC#0=/data/temperature/ \n" );
-  send_to_thirdeye( "AT+CONF TOPIC#1=/data/moisture/ \n" );
+  SerialUSB.println( "Configuring WiFi");
+  send_to_thirdeye( "AT+CONF SSID=NETGEAR90" );
+  send_to_thirdeye( "AT+CONF PASSPHRASE=boldvalley718" );  
+  /* Config Topics */
+  SerialUSB.println( "Configuring MQTT Topics");
+  send_to_thirdeye( "AT+CONF TOPIC#0=/data/temperature/" );
+  send_to_thirdeye( "AT+CONF TOPIC#1=/data/moisture/" );
   /*-- Wifi On --*/
+  SerialUSB.println( "Starting WiFi");
   send_to_thirdeye( "AT+WIFION \n" );
-  /* --- Code for ThirdEye End --- */
-
-  /* For Demo Debug */
-  break_point();
-  
-  debugPrint( "--- Host Demo Start ---" );
 }
 
 
 void loop()
 {
-  int i;
-
   /* Connect */
-  send_to_thirdeye( "AT+CONNECT \n" );
+  SerialUSB.println("Reporting to AWS");
+  if(OK == send_to_thirdeye( "AT+CONNECT" )
+  {
   delay(2000);
-  send_to_thirdeye( "AT+SEND /info/=\"Host-Connect!\" \n" );
+  send_to_thirdeye( "AT+SEND /info/=\"Host-Connect!\"" );
   
-  /* Temperature Sensor */
-  for ( i = 0; i < 4; i++ )
+  for (int i = 0; i < 4; i++ )
   {
-    send_to_thirdeye( "AT+SEND#0 " + String(i) + " \n" );
+    send_to_thirdeye( "AT+SEND#0 " + String(i) );
+    send_to_thirdeye( "AT+SEND#1 " + String(100 + i) );
+    delay(1000);
   }
-  
-  /* Moisture Sensor */
-  for ( i = 0; i < 4; i++ )
+  SerialUSB.println("Disconnecting from AWS");
+  send_to_thirdeye( "AT+SEND /info/=\"Host-Going-To-Disconnect!\"" );
+  send_to_thirdeye( "AT+DISCONNECT" );
+  }
+  else
   {
-    send_to_thirdeye( "AT+SEND#1 " + String(100 + i) + " \n" );
+    SerialUSB.println("Connection failed");
   }
-
-  /* Reset */
-  send_to_thirdeye( "AT+SEND /info/=\"Host-Going-To-Disconnect!\" \n" );
-  send_to_thirdeye( "AT+DISCONNECT \n" );
-  //softReset();
-  /* For Demo Debug */
-  break_point();
+  delay(5000);
 }
 
-
-String simpleJson( char* key, char* value )
+thirdeye_responses_t send_to_thirdeye( String command )
 {
-  char buff[100] = {0};
-  String returnString;
+  Serial1.println( command + String("\n"));
+  // TODO: receive the response from thirdeye
+
+  // copy command to USB so PC can follow what is happening
+  SerialUSB.println("To ThirdEye --> " + command);
   
-  snprintf(buff, sizeof(buff), "{\"%s\":\"%s\"}", key, value);
-  
-  return String(buff);
-}
+  delay(2000);// delay for now.  final commands will get a response from ThirdEye
 
-
-void send_to_thirdeye( String command )
-{
-  serial1_send( command );
-  debugPrint("To ThirdEye --> " + command);
-  delay(2000);
-}
-
-
-/*--- Bebug ---*/
-
-void break_point( void )
-{
-  debugPrint("--- Code Break Point ---");
-  while ( !global_demo_run )
-  {
-    processSerialUSBCommand();
-  }
-  global_demo_run = false;
+  return OK; // assume command was successful
 }
