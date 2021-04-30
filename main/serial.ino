@@ -2,14 +2,24 @@
 void processSerialUSBCommand( void )
 { 
   String inputString = "";         // a String to hold incoming data
-
+  bool isNumber = true;
+  
   while (SerialUSB.available()) 
   {
     char inChar = (char)SerialUSB.read();
     inputString += inChar;
     if (inChar == '\n') {
       /* Simulate sensor value changes by inputing an integer from SerialUSB monitor */
-      temperatureVal = inputString.toInt();
+      int i = 0;
+      while ( inputString.charAt(i) != '\n' )
+      {
+        isNumber = isDigit(inputString.charAt(i)) ? true : false;
+        i++;
+      }
+      if ( isNumber )
+      {
+        temperatureVal = inputString.toInt();
+      }
 
       /* Debug Commands */
       if ( inputString.equals( "disconnect\n" ))
@@ -31,6 +41,12 @@ void processSerialUSBCommand( void )
         /*-- Code added for ThirdEye --*/
         serial1_send( thirdEyeCommandStr[SEND] );
         debugPrint( "Send to serial --> " + String(thirdEyeCommandStr[SEND]) );
+        /*-- End --*/
+      }
+      else if ( inputString.equals( "run\n" ))
+      {
+        /*-- Code added for ThirdEye --*/
+        global_demo_run = true;
         /*-- End --*/
       }
     }
